@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#092a3a">
+  <title>Welcome Center Jeopardy</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #092a3a;
+      --ink-deep: #061d29;
+      --blue: #145d72;
+      --blue-bright: #247f91;
+      --gold: #f5c451;
+      --paper: #fffaf0;
+      --muted: #b7c8cb;
+      --green: #a8d7a2;
+      --red: #f08a7b;
+      --line: rgba(245, 196, 81, .5);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      background: var(--ink-deep);
+      color: var(--paper);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 28px clamp(16px, 4vw, 56px) 40px;
+      background:
+        radial-gradient(ellipse at 50% -18%, rgba(36, 127, 145, .5), transparent 48%),
+        repeating-linear-gradient(135deg, transparent 0 38px, rgba(255, 255, 255, .018) 39px 40px),
+        var(--ink-deep);
+    }
+
+    button { font: inherit; }
+
+    .shell { width: min(1040px, 100%); margin: 0 auto; }
+
+    .masthead {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 0 0 22px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--gold);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .subtitle { margin: 9px 0 0; color: var(--muted); font-size: .95rem; }
+
+    .round-mark {
+      display: grid;
+      width: 52px;
+      aspect-ratio: 1;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--gold);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.35rem;
+    }
+
+    .winner-banner {
+      display: none;
+      margin: 0 0 18px;
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      padding: 14px 18px;
+      background: var(--gold);
+      color: var(--ink-deep);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.15rem, 3vw, 1.55rem);
+      font-weight: 700;
+      text-align: center;
+      animation: arrive .3s ease-out;
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .team-card {
+      min-width: 0;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-top: 3px solid var(--team-color);
+      border-radius: 5px;
+      padding: 14px 16px 13px;
+      background: rgba(20, 93, 114, .48);
+    }
+
+    .team-heading { display: flex; align-items: center; gap: 9px; }
+
+    .team-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--team-color);
+      box-shadow: 0 0 13px color-mix(in srgb, var(--team-color), transparent 35%);
+    }
+
+    .team-name {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--paper);
+      font-size: .9rem;
+      font-weight: 800;
+    }
+
+    .team-name:focus-visible { box-shadow: 0 1px 0 var(--gold); }
+
+    .score-display {
+      margin: 6px 0 9px 19px;
+      color: var(--paper);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 2.2rem;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .score-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .score-btn, .action-btn, .modal-btn {
+      min-height: 36px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      padding: 7px 10px;
+      cursor: pointer;
+      font-size: .78rem;
+      font-weight: 800;
+      transition: background .16s ease, border-color .16s ease, transform .16s ease;
+    }
+
+    .score-btn { background: rgba(255, 255, 255, .1); color: var(--paper); }
+    .score-btn:hover { border-color: rgba(255, 255, 255, .5); background: rgba(255, 255, 255, .17); }
+    .score-btn.award { color: var(--green); }
+    .score-btn.penalty { color: var(--red); }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: rgba(4, 24, 34, .75);
+      box-shadow: 0 18px 55px rgba(0, 0, 0, .2);
+    }
+
+    .category-header {
+      display: grid;
+      min-height: 56px;
+      place-items: center;
+      border-bottom: 1px solid var(--line);
+      color: var(--gold);
+      font-size: .78rem;
+      font-weight: 900;
+      letter-spacing: .15em;
+    }
+
+    .tile {
+      display: grid;
+      min-height: clamp(78px, 13vw, 116px);
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, .13);
+      border-radius: 3px;
+      background: linear-gradient(145deg, #19677b, #10475d);
+      color: var(--gold);
+      cursor: pointer;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.5rem, 4vw, 2.3rem);
+      font-weight: 700;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, .24);
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+
+    .tile:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: var(--gold);
+      background: linear-gradient(145deg, #247f91, #145d72);
+    }
+
+    .tile:disabled {
+      border-color: transparent;
+      background: rgba(255, 255, 255, .035);
+      color: rgba(255, 255, 255, .2);
+      cursor: default;
+      text-shadow: none;
+    }
+
+    .controls { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; }
+    .action-btn { min-height: 44px; padding-inline: 14px; }
+    .final-btn { background: var(--gold); color: var(--ink-deep); }
+    .final-btn:hover { background: #ffda78; }
+    .winner-btn { border-color: rgba(168, 215, 162, .55); background: transparent; color: var(--green); }
+    .winner-btn:hover { background: rgba(168, 215, 162, .12); }
+
+    dialog {
+      width: min(680px, calc(100% - 28px));
+      max-width: none;
+      max-height: min(86vh, 760px);
+      overflow: auto;
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      padding: 0;
+      background: var(--paper);
+      color: #192d35;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+    }
+
+    dialog::backdrop { background: rgba(2, 14, 21, .82); backdrop-filter: blur(3px); }
+    .modal-inner { padding: clamp(22px, 5vw, 36px); }
+    .modal-header { margin: 0 0 12px; color: #17657a; font-size: .73rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+    .modal-question { margin: 0 0 24px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.25rem, 4vw, 1.75rem); line-height: 1.35; }
+    .answer-box { display: none; margin: 0 0 22px; border-left: 3px solid #17657a; padding: 13px 16px; background: #eaf2f1; }
+    .answer-box p { margin: 5px 0 15px; line-height: 1.55; white-space: pre-line; }
+    .answer-box p:last-child { margin-bottom: 0; }
+    .answer-box strong { color: #145d72; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
+    .modal-actions { display: flex; justify-content: space-between; gap: 10px; }
+    .modal-btn { min-height: 42px; padding-inline: 14px; }
+    .reveal-btn { background: #145d72; color: white; }
+    .reveal-btn:hover { background: #0c4659; }
+    .close-btn { border-color: rgba(9, 42, 58, .25); background: transparent; color: #29414a; }
+    .close-btn:hover { background: rgba(9, 42, 58, .07); }
+
+    button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+    .tile:focus-visible { outline-color: var(--gold); }
+
+    @keyframes arrive { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 560px) {
+      body { padding: 22px 14px 28px; }
+      .masthead { margin-bottom: 16px; }
+      .round-mark { width: 42px; }
+      .scoreboard { gap: 8px; margin-bottom: 16px; }
+      .team-card { padding: 12px 9px; }
+      .score-actions { gap: 4px; }
+      .score-btn { min-height: 32px; padding: 5px 7px; font-size: .7rem; }
+      .board { gap: 5px; padding: 6px; }
+      .category-header { min-height: 46px; font-size: .66rem; letter-spacing: .1em; }
+      .tile { min-height: 76px; }
+      .controls { flex-direction: column; }
+      .action-btn { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Welcome Center · Staff Edition</p>
+        <h1>Welcome Center Jeopardy</h1>
+        <p class="subtitle">Ask · Support · Refer</p>
+      </div>
+      <div class="round-mark" aria-hidden="true">WC</div>
+    </header>
+
+    <div class="winner-banner" id="winner-banner" role="status" aria-live="polite"></div>
+
+    <section class="scoreboard" aria-label="Team scores">
+      <div class="team-card" style="--team-color: #71c8df">
+        <div class="team-heading"><span class="team-dot" aria-hidden="true"></span><input class="team-name" id="name-team1" aria-label="Team 1 name" value="Team 1" maxlength="24"></div>
+        <div class="score-display" id="score-team1" aria-live="polite">0</div>
+        <div class="score-actions" aria-label="Adjust Team 1 score">
+          <button class="score-btn" data-team="team1" data-points="100">+100</button>
+          <button class="score-btn" data-team="team1" data-points="200">+200</button>
+          <button class="score-btn award" data-team="team1" data-points="400">+400 Final</button>
+          <button class="score-btn penalty" data-team="team1" data-points="-100">−100</button>
+        </div>
+      </div>
+      <div class="team-card" style="--team-color: #f08a7b">
+        <div class="team-heading"><span class="team-dot" aria-hidden="true"></span><input class="team-name" id="name-team2" aria-label="Team 2 name" value="Team 2" maxlength="24"></div>
+        <div class="score-display" id="score-team2" aria-live="polite">0</div>
+        <div class="score-actions" aria-label="Adjust Team 2 score">
+          <button class="score-btn" data-team="team2" data-points="100">+100</button>
+          <button class="score-btn" data-team="team2" data-points="200">+200</button>
+          <button class="score-btn award" data-team="team2" data-points="400">+400 Final</button>
+          <button class="score-btn penalty" data-team="team2" data-points="-100">−100</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="board" aria-label="Jeopardy question board">
+      <div class="category-header">Ask</div>
+      <div class="category-header">Support</div>
+      <div class="category-header">Refer</div>
+      <button class="tile" data-category="ask" data-points="100" aria-label="Ask for 100 points">$100</button>
+      <button class="tile" data-category="support" data-points="100" aria-label="Support for 100 points">$100</button>
+      <button class="tile" data-category="refer" data-points="100" aria-label="Refer for 100 points">$100</button>
+      <button class="tile" data-category="ask" data-points="200" aria-label="Ask for 200 points">$200</button>
+      <button class="tile" data-category="support" data-points="200" aria-label="Support for 200 points">$200</button>
+      <button class="tile" data-category="refer" data-points="200" aria-label="Refer for 200 points">$200</button>
+    </section>
+
+    <div class="controls">
+      <button class="action-btn final-btn" id="final-question">Launch Final Jeopardy · 400 pts</button>
+      <button class="action-btn winner-btn" id="announce-winner">Announce winner</button>
+    </div>
+  </main>
+
+  <dialog id="question-dialog" aria-labelledby="modal-category" aria-describedby="modal-question">
+    <div class="modal-inner">
+      <p class="modal-header" id="modal-category">Category</p>
+      <h2 class="modal-question" id="modal-question">Question</h2>
+      <div class="answer-box" id="answer-box" aria-live="polite">
+        <strong>Acceptable answer</strong>
+        <p id="modal-answer"></p>
+        <strong>Presenter notes</strong>
+        <p id="modal-notes"></p>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn reveal-btn" id="reveal-answer" aria-expanded="false">Show answer &amp; notes</button>
+        <button class="modal-btn close-btn" id="close-dialog">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    const questions = {
+      ask: {
+        100: {
+          category: "Ask — 100 points",
+          question: "A student walks into your office and says, ‘I need help.’ What is a useful first open-ended question to ask?",
+          answer: "‘What are you trying to complete today?’ Accept similar open-ended questions that identify the goal.",
+          notes: "Clarify the specific task before choosing a referral or next step."
+        },
+        200: {
+          category: "Ask — 200 points",
+          question: "A student says, ‘I can’t log in.’ Name two details you should clarify before attempting a password reset.",
+          answer: "Any two: Which specific system? What error message appears? Do they have access to the email or phone on file? Have they logged in before?",
+          notes: "CCCApply, ID.me, and MyCabrillo are separate systems with different recovery steps."
+        }
+      },
+      support: {
+        100: {
+          category: "Support — 100 points",
+          question: "A student says a balance is preventing registration. Where can you help them look to review charges in MyCabrillo?",
+          answer: "MyCabrillo → Self-Service → Student Finance → Account Activity → Select term → View Statement.",
+          notes: "Guide students to view the itemized statement and check error messages for other potential holds."
+        },
+        200: {
+          category: "Support — 200 points",
+          question: "A student just submitted an application and asks for a Cabrillo Student ID Card. What must be confirmed first?",
+          answer: "Confirm that they are actively registered in classes for the current or upcoming term.",
+          notes: "Application submission alone does not establish ID card eligibility; course enrollment is required."
+        }
+      },
+      refer: {
+        100: {
+          category: "Refer — 100 points",
+          question: "A student asks, ‘Which classes should I take to meet my degree and transfer requirements?’ Which office should receive the referral?",
+          answer: "Academic Counseling.",
+          notes: "Staff can assist with schedule tools and Student Planning navigation, but course selection belongs with Counselors."
+        },
+        200: {
+          category: "Refer — 200 points",
+          question: "You helped a student locate financial aid info, but they need an award explanation or eligibility decision. Where do you refer them, and what key info should be included?",
+          answer: "Refer to Financial Aid. Include what they are trying to complete, assistance already provided, and unresolved questions.",
+          notes: "Passing along context prevents students from needing to repeat their story."
+        }
+      },
+      final: {
+        400: {
+          category: "Final Jeopardy — 400 points · 30 seconds",
+          question: "A returning student says, ‘I want to register, but I can’t get into my account. I also don’t have the phone number I used before.’ Walk us through Ask, Support, and Refer.",
+          answer: "ASK: Identify the locked account, last attendance date, and email access.\nSUPPORT: Locate recovery steps and identify the exact error displayed.\nREFER: Connect to CCCApply Support if contact information is blocked. Connect to the Welcome Center or Admissions & Records as needed.",
+          notes: "Identify the exact system before choosing a solution. Avoid creating duplicate accounts as a workaround."
+        }
+      }
+    };
+
+    const scores = { team1: 0, team2: 0 };
+    const dialog = document.getElementById("question-dialog");
+    const answerBox = document.getElementById("answer-box");
+    const revealButton = document.getElementById("reveal-answer");
+    let currentTile = null;
+
+    function updateScore(team, points) {
+      scores[team] += points;
+      document.getElementById(`score-${team}`).textContent = scores[team].toLocaleString();
+    }
+
+    function openQuestion(category, points, tile = null) {
+      const question = questions[category][points];
+      currentTile = tile;
+      document.getElementById("modal-category").textContent = question.category;
+      document.getElementById("modal-question").textContent = question.question;
+      document.getElementById("modal-answer").textContent = question.answer;
+      document.getElementById("modal-notes").textContent = question.notes;
+      answerBox.style.display = "none";
+      revealButton.textContent = "Show answer & notes";
+      revealButton.setAttribute("aria-expanded", "false");
+      dialog.showModal();
+    }
+
+    document.querySelectorAll(".tile").forEach((tile) => {
+      tile.addEventListener("click", () => openQuestion(tile.dataset.category, Number(tile.dataset.points), tile));
+    });
+
+    document.querySelectorAll(".score-btn").forEach((button) => {
+      button.addEventListener("click", () => updateScore(button.dataset.team, Number(button.dataset.points)));
+    });
+
+    document.getElementById("final-question").addEventListener("click", () => openQuestion("final", 400));
+    document.getElementById("close-dialog").addEventListener("click", () => dialog.close());
+    revealButton.addEventListener("click", () => {
+      const isVisible = answerBox.style.display !== "none";
+      answerBox.style.display = isVisible ? "none" : "block";
+      revealButton.textContent = isVisible ? "Show answer & notes" : "Hide answer & notes";
+      revealButton.setAttribute("aria-expanded", String(!isVisible));
+    });
+
+    dialog.addEventListener("close", () => {
+      if (currentTile) {
+        currentTile.disabled = true;
+        currentTile.setAttribute("aria-label", `${currentTile.getAttribute("aria-label")}, completed`);
+        currentTile = null;
+      }
+    });
+
+    document.getElementById("announce-winner").addEventListener("click", () => {
+      const team1 = document.getElementById("name-team1").value.trim() || "Team 1";
+      const team2 = document.getElementById("name-team2").value.trim() || "Team 2";
+      const banner = document.getElementById("winner-banner");
+      if (scores.team1 > scores.team2) {
+        banner.textContent = `Congratulations, ${team1}! You are the Welcome Center champions!`;
+      } else if (scores.team2 > scores.team1) {
+        banner.textContent = `Congratulations, ${team2}! You are the Welcome Center champions!`;
+      } else {
+        banner.textContent = "It’s a tie! Outstanding teamwork by both teams!";
+      }
+      banner.style.display = "block";
+    });
+  </script>
+</body>
+</html>
